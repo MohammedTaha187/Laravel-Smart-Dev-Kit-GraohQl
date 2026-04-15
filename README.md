@@ -64,6 +64,8 @@ php artisan smart:crud Product \
 
 ## 🛠️ Step-by-Step Installation
 
+## 🛠️ Step-by-Step Installation
+
 ### 1. **Clone & Install**:
    ```bash
    git clone https://github.com/MohammedTaha187/Laravel-Smart-Dev-Kit.git my-project && cd my-project
@@ -71,6 +73,7 @@ php artisan smart:crud Product \
    ```
 
 ### 2. Environment Configuration
+Create your environment file and generate the necessary security keys.
 ```bash
 cp .env.example .env
 php artisan key:generate
@@ -78,16 +81,42 @@ php artisan jwt:secret
 ```
 
 ### 3. Launch with Docker (Laravel Sail)
-This project is fully containerized for consistency across environments.
+This project is fully containerized. Start your environment and migrate the core tables.
 ```bash
 ./vendor/bin/sail up -d
 ./vendor/bin/sail artisan migrate --seed
 ```
 
-### 4. Build Your First Feature
+---
+
+### 🚀 Building Your First Feature (Example: Products)
+
+Building a complete CRUD with this engine is a 3-step process. Here is how you do it using **Laravel Sail**:
+
+### 1. Create your Migration
+Define your database schema as you usually do in Laravel.
 ```bash
-./vendor/bin/sail artisan smart:crud SalesOrder --api --with-service --with-data
+./vendor/bin/sail artisan make:migration create_products_table
 ```
+
+### 2. Run Migration
+Apply your changes to the Docker database.
+```bash
+./vendor/bin/sail artisan migrate
+```
+
+### 3. Generate the "Ultimate" Architecture
+Now, let the engine build the Controllers, Services, Repos, DTOs, and Modules for you.
+```bash
+./vendor/bin/sail artisan smart:crud Product \
+  --api \
+  --with-service \
+  --with-data \
+  --with-contracts \
+  --translatable=name,description \
+  --module=Inventory
+```
+*Wait 2 seconds... and your feature is 100% production-ready!* 🚀
 
 ---
 
