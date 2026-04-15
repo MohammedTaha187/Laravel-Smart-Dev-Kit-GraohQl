@@ -7,17 +7,13 @@ use Illuminate\Support\Str;
 
 class DBAnalyzer
 {
-    /**
-     * Get all tables in the database.
-     */
+    // Get all tables in the database
     public function getTables(): array
     {
         return Schema::getTables();
     }
 
-    /**
-     * Get foreign keys for a specific table.
-     */
+    // Get foreign keys for a specific table
     public function getForeignKeys(string $table): array
     {
         try {
@@ -27,9 +23,7 @@ class DBAnalyzer
         }
     }
 
-    /**
-     * Identify relationships for a given table.
-     */
+    // Identify relationships based on schema
     public function identifyRelationships(string $table): array
     {
         $relationships = [
@@ -37,7 +31,7 @@ class DBAnalyzer
             'hasMany' => [],
         ];
 
-        // 1. BelongsTo (Direct Foreign Keys)
+        // BelongsTo relationships
         foreach ($this->getForeignKeys($table) as $fk) {
             $foreignTable = $fk['foreign_table'];
             $relationships['belongsTo'][] = [
@@ -48,7 +42,7 @@ class DBAnalyzer
             ];
         }
 
-        // 2. HasMany (Check which tables reference this table)
+        // HasMany relationships
         foreach ($this->getTables() as $otherTableData) {
             $otherTable = $otherTableData['name'];
             if ($otherTable === $table) continue;
@@ -108,10 +102,7 @@ class DBAnalyzer
 
             $colRules = [];
 
-            // 1. Required vs Nullable
-            $colRules[] = $column['nullable'] ? 'nullable' : 'required';
-
-            // 2. Data Types
+            // Type inference
             $type = strtolower($column['type_name']);
             if (Str::contains($name, 'email')) {
                 $colRules[] = 'email';

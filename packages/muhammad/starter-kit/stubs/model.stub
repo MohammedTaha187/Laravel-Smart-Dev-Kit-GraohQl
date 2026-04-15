@@ -4,22 +4,16 @@ namespace {{Namespace}};
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Attributes\Guarded;
+use App\Traits\HandlesAttributeConfig;
 {{SoftDeletesImport}}
 {{MediaImports}}
 {{TranslationImport}}
 
+#[Guarded(['id', 'created_at', 'updated_at', 'deleted_at'])]
 class {{Class}} extends Model {{MediaImplements}}
 {
-    use HasFactory{{SoftDeletesTrait}}, {{MediaTrait}}, {{TranslationTrait}};
+    use HasFactory{{SoftDeletesTrait}}, {{MediaTrait}}, {{TranslationTrait}}, HandlesAttributeConfig;
     {{EnterpriseTraits}}
     {{TranslatableFields}}
-
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
-    protected $fillable = [
-        //
-    ];
 }

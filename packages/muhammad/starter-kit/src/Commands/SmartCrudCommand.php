@@ -113,8 +113,6 @@ class SmartCrudCommand extends Command
         $filename = date('Y_m_d_His') . "_create_{$table}_table.php";
         $path = database_path("migrations/{$filename}");
 
-        // We'll use a simple migration stub or just run the default artisan one if possible
-        // But for consistency with the "Heart" theme, let's use a stub if we have one or call artisan
         $this->call('make:migration', [
             'name' => "create_{$table}_table",
             '--create' => $table
@@ -233,7 +231,7 @@ class SmartCrudCommand extends Command
         $basePath = $this->option('module') ? base_path("Modules/{$this->option('module')}/app/Contracts") : app_path('Contracts');
         $contractNamespace = $this->option('module') ? "Modules\\{$this->option('module')}\\Contracts" : "App\\Contracts";
 
-        $content = "<?php\n\nnamespace {$contractNamespace};\n\ninterface {$name}\n{\n    // Define methods\n}\n";
+        $content = "<?php\n\nnamespace {$contractNamespace};\n\ninterface {$name}\n{\n    //\n}\n";
         
         $this->createFile("{$basePath}/{$name}.php", $content, []);
     }
@@ -336,12 +334,11 @@ class SmartCrudCommand extends Command
             }
         }
 
-        // Fill remaining bodies with placeholders or basic logic
-        $reps['{{IndexBody}}'] = $reps['{{IndexBody}}'] ?? "// Logic";
-        $reps['{{StoreBody}}'] = $reps['{{StoreBody}}'] ?? "// Logic";
-        $reps['{{ShowBody}}'] = "// Logic";
-        $reps['{{UpdateBody}}'] = "// Logic";
-        $reps['{{DestroyBody}}'] = "// Logic";
+        $reps['{{IndexBody}}'] = $reps['{{IndexBody}}'] ?? "";
+        $reps['{{StoreBody}}'] = $reps['{{StoreBody}}'] ?? "";
+        $reps['{{ShowBody}}'] = "";
+        $reps['{{UpdateBody}}'] = "";
+        $reps['{{DestroyBody}}'] = "";
 
         return $reps;
     }

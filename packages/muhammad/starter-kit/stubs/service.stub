@@ -8,8 +8,4 @@ class {{Class}} extends BaseService {{Implements}}
     {
         parent::__construct($model);
     }
-
-    /**
-     * Business logic for {{Class}}.
-     */
 }

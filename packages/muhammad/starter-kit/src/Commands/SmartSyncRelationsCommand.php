@@ -42,7 +42,7 @@ class SmartSyncRelationsCommand extends Command
     {
         $models = [];
 
-        // 1. Scan App Models
+        // Discover app-level models
         if (!$this->option('module')) {
             $appPath = app_path('Models');
             if (File::exists($appPath)) {
@@ -58,7 +58,7 @@ class SmartSyncRelationsCommand extends Command
             }
         }
 
-        // 2. Scan Module Models
+        // Discover module-level models
         $module = $this->option('module');
         $modulePaths = $module ? [base_path("Modules/{$module}")] : glob(base_path('Modules/*'), GLOB_ONLYDIR);
 
@@ -130,7 +130,7 @@ class SmartSyncRelationsCommand extends Command
             ? "\\App\\Models\\{$rel['model']}::class, '{$rel['foreign_key']}', '{$rel['owner_key']}'"
             : "\\App\\Models\\{$rel['model']}::class, '{$rel['foreign_key']}', '{$rel['local_key']}'";
 
-        // Handle modular model imports/namespace if needed (Simplified for now using full paths)
+        // Defaulting to full-path imports for modular compatibility
         $code = "\n    public function {$methodName}()\n    {\n        {$returnType}{$params});\n    }\n";
 
         // Insert before the last closing brace
