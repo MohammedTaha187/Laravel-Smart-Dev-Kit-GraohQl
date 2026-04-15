@@ -15,6 +15,6 @@ Route::prefix('v1')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('/refresh', [AuthController::class, 'refresh']);
     });
-});
 
-Route::apiResource('products', \App\Http\Controllers\Api\V1\ProductController::class);
+    Route::apiResource('products', \App\Http\Controllers\Api\V1\ProductController::class);
+});

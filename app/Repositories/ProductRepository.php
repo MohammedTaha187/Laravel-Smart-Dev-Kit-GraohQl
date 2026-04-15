@@ -2,7 +2,9 @@
 
 namespace App\Repositories;
 
-class ProductRepository
+use App\Contracts\ProductRepositoryInterface;
+
+class ProductRepository implements ProductRepositoryInterface
 {
     /**
      * Data access logic for ProductRepository.

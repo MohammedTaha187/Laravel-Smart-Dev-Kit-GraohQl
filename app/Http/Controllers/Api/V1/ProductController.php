@@ -3,18 +3,19 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\Product;
-use App\Services\ProductService;
-use App\Http\Resources\ProductResource;
 use App\Http\Requests\ProductRequest;
+use App\Contracts\ProductServiceInterface;
+use App\Contracts\ProductRepositoryInterface;
 use Illuminate\Http\JsonResponse;
+use App\Http\Resources\ProductResource;
+use App\Models\Product;
 
 class ProductController extends Controller
 {
     protected $ProductService;
     protected $ProductRepository;
 
-    public function __construct(ProductService $ProductService, ProductRepository $ProductRepository)
+    public function __construct(ProductServiceInterface $ProductService, ProductRepositoryInterface $ProductRepository)
     {
         $this->ProductService = $ProductService;
         $this->ProductRepository = $ProductRepository;

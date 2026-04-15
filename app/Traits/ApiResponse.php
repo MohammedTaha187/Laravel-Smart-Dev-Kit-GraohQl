@@ -23,6 +23,12 @@ trait ApiResponse
         ], $code);
     }
 
+    protected function successResponse($data = null, string $message = null, int $code = 200): JsonResponse
+    {
+        
+        return $this->success($data, $message, $code);
+    }
+
     /**
      * Error response.
      *

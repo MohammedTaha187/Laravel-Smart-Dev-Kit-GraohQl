@@ -16,9 +16,7 @@ test('can list products', function () {
 });
 
 test('can create product', function () {
-    $data = [
-        //
-    ];
+    $data = Product::factory()->make()->toArray();
 
     postJson('/api/v1/products', $data)
         ->assertStatus(201);
