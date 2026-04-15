@@ -2,6 +2,7 @@
 
 ![Hero Image](public/images/hero.png)
 
+[![CI Status](https://img.shields.io/github/actions/workflow/status/MohammedTaha187/Laravel-Smart-Dev-Kit/ci.yml?branch=main)](https://github.com/MohammedTaha187/Laravel-Smart-Dev-Kit/actions)
 [![Laravel](https://img.shields.io/badge/Laravel-13.x-FF2D20?style=for-the-badge&logo=laravel)](https://laravel.com)
 [![PHP](https://img.shields.io/badge/PHP-8.4-777BB4?style=for-the-badge&logo=php)](https://php.net)
 [![Architecture](https://img.shields.io/badge/Architecture-Clean_Modular-blue?style=for-the-badge)](https://en.wikipedia.org/wiki/Clean_architecture)
