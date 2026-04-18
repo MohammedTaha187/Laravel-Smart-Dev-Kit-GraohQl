@@ -1,26 +1,120 @@
 # 🚀 Laravel Smart Dev Kit (Easy Dev)
 
-A powerful, production-ready SDK for rapid Laravel API development. This kit follows the **Interface-Service-Repository** architecture and automates the creation of 11+ essential files per CRUD module, ensuring PSR-4 compliance and full compatibility with **Modular Architecture**.
+A powerful, production-ready SDK for rapid Laravel API development. This kit follows the **Interface-Service-Repository** architecture and automates the creation of 11+ essential files per CRUD module.
 
 ---
 
 ## ✨ Features
 
-- **Modular Architecture Support**: Seamlessly integrate with `nwidart/laravel-modules`.
-- **Automated CRUD Generation**: Generates Models, Migrations, Controllers, Services, Repositories, Interfaces, DTOs, Requests, Resources, and Policies.
-- **Smart Mass Assignment**: Automatically detects database columns and populates `$fillable` fields.
-- **Automated Factories**: Generates Eloquent Factories and correctly resolves them in modular namespaces.
-- **Instant Testing**: Generates **Pest Integration Tests** with automated role/permission seeding.
-- **Clean Architecture**: Enforces a strict separation of concerns for maintainable code.
+- **Standard & Industrial Modes**: Choose between a monolithic or modular architecture.
+- **Automated CRUD Generation**: Models, Migrations, Controllers, Services, Repositories, DTOs, and more.
+- **Smart Data Syncing**: Instantly update your code after database schema changes.
+- **Docker Ready**: Fully compatible with Laravel Sail.
+- **Clean Architecture**: Strict separation of concerns for maintainable enterprise code.
 
 ---
 
-## 🛠️ Installation & Setup
+## 🛠️ Environment Support
 
-### 1. Requirements
-Ensure you are using **PHP 8.3+** and **Laravel 12/13**.
+### 💻 Local Development
+If you are running PHP/Laravel directly on your machine:
+```bash
+php artisan smart:crud ModelName
+```
 
-### 2. Initial Setup
+### 🐳 Docker (Laravel Sail)
+If you are using the official Docker setup:
+```bash
+./vendor/bin/sail artisan smart:crud ModelName
+```
+
+---
+
+## 🏗️ Choice of Architecture
+
+### 1. Standard Mode (Monolithic)
+Ideal for small-to-medium projects. Files are placed in the standard `app/` directory with our premium nested organization.
+```bash
+# Example
+php artisan smart:crud Product
+```
+
+### 2. Industrial Mode (Modular)
+Designed for large-scale enterprise apps (like big tech companies). Encapsulates each feature into a self-contained module.
+```bash
+# Example
+php artisan smart:crud Product --module=Catalog
+```
+
+---
+
+## 🛠️ Step-by-Step Implementation Guide
+
+Follow this guide to build a professional **Product** module with automated image and video handling.
+
+### 1️⃣ Phase 1: Database Design
+Create your migration: `php artisan make:migration create_products_table`.  
+Use **Media-Aware** naming conventions (`*_image`, `*_video`, `*_file`, `*_url`) for automatic handling:
+
+```php
+Schema::create('products', function (Blueprint $table) {
+    $table->id();
+    $table->string('name');
+    $table->decimal('price', 10, 2);
+    $table->string('thumbnail_image'); // Treated as Image (Upload)
+    $table->string('demo_video');      // Treated as Video (Upload)
+    $table->string('catalog_pdf');    // Treated as Document (Upload)
+    $table->string('official_url');    // Treated as external URL
+    $table->timestamps();
+});
+```
+
+### 2️⃣ Phase 2: Generation
+Run the smart command to generate all 11 enterprise layers:
+```bash
+php artisan smart:crud Product --module=Catalog
+```
+
+### 3️⃣ Phase 3: Deployment
+Run the migration and link the storage to make your media public:
+```bash
+php artisan migrate
+php artisan storage:link
+```
+
+### 4️⃣ Phase 4: Verification
+Your API is now ready! 
+- **Upload**: Send a `POST` request with `multipart/form-data`. The `ProductService` will automatically store the files.
+- **Response**: The `ProductResource` will automatically return full public URLs:
+```json
+{
+    "id": 1,
+    "name": "Super Widget",
+    "thumbnail_image": "https://yourdomain.com/storage/products/xyz.jpg",
+    "demo_video": "https://yourdomain.com/storage/products/abc.mp4",
+    "official_url": "https://google.com"
+}
+```
+
+---
+
+## 🔄 Syncing Database Changes
+
+When you update your database (e.g., adding a new column to a migration), follow these steps to **Sync** your code automatically:
+
+1.  **Update Migration**: Add your new columns to the migration file.
+2.  **Run Migrate**: `php artisan migrate`
+3.  **Run Sync Command**:
+    ```bash
+    php artisan smart:from-migration table_name --force
+    ```
+    > [!TIP]
+    > Using the `--force` flag will automatically update your **StoreRequest**, **UpdateRequest**, and **Resource** with the new database columns without asking for confirmation.
+
+---
+
+## 📖 Installation & Setup
+
 ```bash
 composer install
 cp .env.example .env
@@ -28,48 +122,13 @@ php artisan key:generate
 php artisan migrate --seed
 ```
 
-### 3. Running with Sail (Docker)
-```bash
-./vendor/bin/sail up -d
-./vendor/bin/sail composer install
-./vendor/bin/sail artisan migrate
-```
-
----
-
-## 📖 Usage Guide
-
-### Generating a New CRUD Module
-To generate a complete CRUD in a specific module (e.g., `Catalog`), run:
-
-```bash
-php artisan smart:crud Product --module=Catalog
-```
-
-### What happens under the hood?
-1. **Initialization**: Checks for `module.json` and creates it if missing.
-2. **Generation**: Creates 11 files with correct namespaces.
-3. **Discovery**: Automatically enables the module and refreshes the autoloader.
-4. **Service Binding**: Binds interfaces to implementations in the generated `CatalogServiceProvider`.
-
 ---
 
 ## 🧪 Testing
 
-The generated tests are ready to run out of the box with **Pest**. To test a specific module:
-
 ```bash
-./vendor/bin/sail artisan test Modules/Catalog/Tests/Feature/ProductTest.php
+./vendor/bin/sail artisan test
 ```
-
----
-
-## 📂 Project Structure
-
-- `app/`: Core application logic.
-- `Modules/`: Self-contained business modules.
-- `packages/muhammad/easy-dev/`: The core SDK source and stubs.
-- `database/`: Migrations and seeders.
 
 ---
 

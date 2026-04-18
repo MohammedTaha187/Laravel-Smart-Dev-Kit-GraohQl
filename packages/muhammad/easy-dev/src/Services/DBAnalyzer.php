@@ -103,33 +103,40 @@ class DBAnalyzer
         foreach ($columns as $column) {
             $name = $column['name'];
             
-            // Skip auto-incrementing/timestamp columns usually
+            // Skip auto-incrementing/timestamp columns
             if ($name === 'id' || $name === 'created_at' || $name === 'updated_at' || $name === 'deleted_at') {
                 continue;
             }
 
             $colRules = [];
 
-            // Type inference
-            $type = strtolower($column['type_name']);
-            if (Str::contains($name, 'email')) {
-                $colRules[] = 'email';
-            }
-
-            if (Str::contains($type, 'varchar') || Str::contains($type, 'string') || Str::contains($type, 'text')) {
-                $colRules[] = 'string';
-                // Handle max length if available
-                if (isset($column['type']) && preg_match('/\((.*)\)/', $column['type'], $matches)) {
-                    $colRules[] = "max:{$matches[1]}";
+            // 1. Media Type Detection (Custom Logic)
+            if ($this->isFileColumn($name)) {
+                $colRules = $this->getMediaValidationRules($name);
+            } elseif ($this->isUrlColumn($name)) {
+                $colRules[] = 'nullable';
+                $colRules[] = 'url';
+            } else {
+                // 2. Standard Type inference
+                $type = strtolower($column['type_name']);
+                if (Str::contains($name, 'email')) {
+                    $colRules[] = 'email';
                 }
-            } elseif (Str::contains($type, 'int')) {
-                $colRules[] = 'integer';
-            } elseif (Str::contains($type, 'decimal') || Str::contains($type, 'float') || Str::contains($type, 'double')) {
-                $colRules[] = 'numeric';
-            } elseif (Str::contains($type, 'bool') || Str::contains($type, 'tinyint(1)')) {
-                $colRules[] = 'boolean';
-            } elseif (Str::contains($type, 'date') || Str::contains($type, 'time')) {
-                $colRules[] = 'date';
+
+                if (Str::contains($type, ['varchar', 'string', 'text'])) {
+                    $colRules[] = 'string';
+                    if (isset($column['type']) && preg_match('/\((.*)\)/', $column['type'], $matches)) {
+                        $colRules[] = "max:{$matches[1]}";
+                    }
+                } elseif (Str::contains($type, 'int')) {
+                    $colRules[] = 'integer';
+                } elseif (Str::contains($type, ['decimal', 'float', 'double'])) {
+                    $colRules[] = 'numeric';
+                } elseif (Str::contains($type, ['bool', 'tinyint(1)'])) {
+                    $colRules[] = 'boolean';
+                } elseif (Str::contains($type, ['date', 'time'])) {
+                    $colRules[] = 'date';
+                }
             }
 
             // 3. Foreign Keys
@@ -143,5 +150,39 @@ class DBAnalyzer
         }
 
         return $rules;
+    }
+
+    public function isFileColumn(string $name): bool
+    {
+        $keywords = ['file', 'image', 'avatar', 'logo', 'icon', 'video', 'pdf', 'cv', 'attachment', 'cover', 'thumbnail', 'document'];
+        return Str::contains(strtolower($name), $keywords);
+    }
+
+    public function isUrlColumn(string $name): bool
+    {
+        // Don't treat columns like 'file_url' as just URL if they should be handled as file uploads
+        if ($this->isFileColumn($name)) return false;
+        
+        $keywords = ['url', 'link', 'website', 'path'];
+        return Str::contains(strtolower($name), $keywords);
+    }
+
+    protected function getMediaValidationRules(string $name): array
+    {
+        $name = strtolower($name);
+        
+        if (Str::contains($name, ['image', 'avatar', 'logo', 'icon', 'cover', 'thumbnail'])) {
+            return ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'];
+        }
+
+        if (Str::contains($name, ['video'])) {
+            return ['nullable', 'file', 'mimetypes:video/mp4,video/quicktime,video/x-msvideo', 'max:51200'];
+        }
+
+        if (Str::contains($name, ['pdf', 'cv', 'document'])) {
+            return ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:10240'];
+        }
+
+        return ['nullable', 'file', 'max:10240'];
     }
 }

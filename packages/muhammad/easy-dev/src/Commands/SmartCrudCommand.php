@@ -24,6 +24,7 @@ class SmartCrudCommand extends Command
                             {--with-notification : Generate a default notification class}
                             {--with-logs : Add activity logging}
                             {--soft-delete : Add soft delete support}
+                            {--force : Overwrite existing files without confirmation}
                             {--translatable= : Comma-separated list of translatable fields}';
 
     protected $description = 'Generate a complete CRUD feature set (11 files)';
@@ -120,12 +121,14 @@ class SmartCrudCommand extends Command
      */
     protected function getApiSubPath(): string
     {
-        return $this->module ? "Api/V1/{$this->module}" : 'Api/V1';
+        $base = $this->module ? "Api/V1/{$this->module}" : 'Api/V1';
+        return "{$base}/{$this->model}";
     }
 
     protected function getApiSubNamespace(): string
     {
-        return $this->module ? "Api\\V1\\{$this->module}" : 'Api\\V1';
+        $base = $this->module ? "Api\\V1\\{$this->module}" : 'Api\\V1';
+        return "{$base}\\{$this->model}";
     }
 
     // ──────────────────────────────────────────────────
@@ -142,7 +145,7 @@ class SmartCrudCommand extends Command
 
         $table     = Str::snake(Str::pluralStudly($this->model));
         $columns   = array_column($this->analyzer->getColumns($table), 'name');
-        $fillable  = array_filter($columns, function($c) {
+        $fillable  = array_filter($columns, function ($c) {
             return ! in_array($c, ['id', 'created_at', 'updated_at', 'deleted_at']);
         });
         $fillableString = "'" . implode("', '", $fillable) . "'";
@@ -176,11 +179,8 @@ class SmartCrudCommand extends Command
 
     protected function getFactoryMethod(string $namespace): string
     {
-        if (! $this->module) {
-            return '';
-        }
-
-        $factoryClass = "Modules\\{$this->module}\\Database\\Factories\\{$this->model}Factory";
+        $factoryNs = $this->getBaseNamespace() . "\\Database\\Factories\\{$this->model}";
+        $factoryClass = "{$factoryNs}\\{$this->model}Factory";
         
         return "\n    protected static function newFactory()\n    {\n        return \\{$factoryClass}::new();\n    }";
     }
@@ -188,7 +188,7 @@ class SmartCrudCommand extends Command
     protected function initializeModule(): void
     {
         $basePath = base_path("Modules/{$this->module}");
-        
+
         // 1. Create module.json if missing
         if (! File::exists("{$basePath}/module.json")) {
             $stub = File::get(__DIR__ . '/../../stubs/module.json.stub');
@@ -205,7 +205,7 @@ class SmartCrudCommand extends Command
             $this->createFile($providerPath, $stub, [
                 '{{Module}}' => $this->module,
             ]);
-            
+
             // Try to enable the module if nwidart is present
             try {
                 $this->callSilent('module:enable', ['module' => $this->module]);
@@ -290,10 +290,29 @@ class SmartCrudCommand extends Command
         $namespace = $this->getBaseNamespace() . "\\Http\\Resources\\{$subNs}";
         $path      = "{$basePath}/Http/Resources/{$subPath}/{$this->model}Resource.php";
 
+        $table = Str::snake(Str::pluralStudly($this->model));
+        $columns = $this->analyzer->getColumns($table);
+
+        $fields = '';
+        $hasFiles = false;
+
+        foreach ($columns as $column) {
+            $name = $column['name'];
+            if (in_array($name, ['created_at', 'updated_at', 'deleted_at'])) continue;
+
+            if ($this->analyzer->isFileColumn($name)) {
+                $hasFiles = true;
+                $fields .= "\n            '{$name}' => app(\\EasyDev\\Laravel\\Services\\FileService::class)->url(\$this->{$name}),";
+            } else {
+                $fields .= "\n            '{$name}' => \$this->{$name},";
+            }
+        }
+
         $stub = File::get(__DIR__ . '/../../stubs/resource.stub');
         $this->createFile($path, $stub, [
-            '{{Namespace}}' => $namespace,
-            '{{Class}}'     => "{$this->model}Resource",
+            '{{Namespace}}'      => $namespace,
+            '{{Class}}'          => "{$this->model}Resource",
+            '{{ResourceFields}}' => $fields,
         ]);
     }
 
@@ -320,11 +339,11 @@ class SmartCrudCommand extends Command
         $namespace = $this->getBaseNamespace() . "\\Http\\Controllers\\{$subNs}";
         $path      = "{$basePath}/Http/Controllers/{$subPath}/{$this->model}Controller.php";
 
-        $serviceContractNs    = $this->getBaseNamespace() . '\\Services\\Contracts';
-        $repositoryContractNs = $this->getBaseNamespace() . '\\Repositories\\Contracts';
+        $serviceContractNs    = $this->getBaseNamespace() . "\\Services\\{$this->model}\\Contracts";
+        $repositoryContractNs = $this->getBaseNamespace() . "\\Repositories\\{$this->model}\\Contracts";
         $resourceNs           = $this->getBaseNamespace() . "\\Http\\Resources\\{$subNs}";
         $storeRequestNs       = $this->getBaseNamespace() . "\\Http\\Requests\\{$subNs}";
-        $dataNs               = $this->getBaseNamespace() . '\\DTOs';
+        $dataNs               = $this->getBaseNamespace() . "\\DTOs\\{$this->model}";
 
         $stub = File::get(__DIR__ . '/../../stubs/controller.api.stub');
 
@@ -355,14 +374,43 @@ class SmartCrudCommand extends Command
     {
         $basePath       = $this->getBasePath();
         $baseNs         = $this->getBaseNamespace();
-        $serviceNs      = "{$baseNs}\\Services";
+        $serviceNs      = "{$baseNs}\\Services\\{$this->model}";
         $contractNs     = "{$serviceNs}\\Contracts";
-        $contractPath   = "{$basePath}/Services/Contracts";
-        $servicePath    = "{$basePath}/Services";
+        $contractPath   = "{$basePath}/Services/{$this->model}/Contracts";
+        $servicePath    = "{$basePath}/Services/{$this->model}";
         $modelNs        = "{$baseNs}\\Models\\{$this->model}";
-        $dataNs         = "{$baseNs}\\DTOs\\{$this->model}Data";
-        $repoContractNs = "{$baseNs}\\Repositories\\Contracts";
+        $dataNs         = "{$baseNs}\\DTOs\\{$this->model}\\{$this->model}Data";
+        $repoContractNs = "{$baseNs}\\Repositories\\{$this->model}\\Contracts";
         $repoInterface  = "{$this->model}RepositoryInterface";
+
+        $table = Str::snake(Str::pluralStudly($this->model));
+        $columns = $this->analyzer->getColumns($table);
+        $fileCols = array_filter($columns, fn($c) => $this->analyzer->isFileColumn($c['name']));
+
+        $fileUploadLogic = '';
+        $fileUpdateLogic = '';
+        $hasFiles = count($fileCols) > 0;
+
+        foreach ($fileCols as $col) {
+            $name = $col['name'];
+            $fileUploadLogic .= "if (\$data->{$name}) {\n            \$payload['{$name}'] = \$this->fileService->upload(\$data->{$name}, '{$table}');\n        }\n";
+            
+            $fileUpdateLogic .= "if (\$data->{$name}) {\n            \$old = \$this->getById(\$id);\n            if (\$old && \$old->{$name}) {\n                \$this->fileService->delete(\$old->{$name});\n            }\n            \$payload['{$name}'] = \$this->fileService->upload(\$data->{$name}, '{$table}');\n        }\n";
+        }
+
+        $replacements = [
+            '{{Namespace}}'               => $serviceNs,
+            '{{Class}}'                   => "{$this->model}Service",
+            '{{ModelClass}}'              => $this->model,
+            '{{ModelPath}}'               => $modelNs,
+            '{{DataPath}}'                => $dataNs,
+            '{{RepositoryInterface}}'      => $repoInterface,
+            '{{RepositoryContractPath}}'   => $repoContractNs,
+            '{{FileServiceImport}}'       => $hasFiles ? "use EasyDev\\Laravel\\Services\\FileService;" : '',
+            '{{FileServiceProperty}}'     => $hasFiles ? ",\n        private readonly FileService \$fileService" : '',
+            '{{FileUploadLogic}}'         => trim($fileUploadLogic),
+            '{{FileUpdateLogic}}'         => trim($fileUpdateLogic),
+        ];
 
         // 1. Interface
         $interfaceStub = File::get(__DIR__ . '/../../stubs/service-interface.stub');
@@ -376,15 +424,7 @@ class SmartCrudCommand extends Command
 
         // 2. Implementation
         $serviceStub = File::get(__DIR__ . '/../../stubs/service.stub');
-        $this->createFile("{$servicePath}/{$this->model}Service.php", $serviceStub, [
-            '{{Namespace}}'          => $serviceNs,
-            '{{Class}}'              => "{$this->model}Service",
-            '{{ModelClass}}'         => $this->model,
-            '{{ModelPath}}'          => $modelNs,
-            '{{DataPath}}'           => $dataNs,
-            '{{RepositoryInterface}}' => $repoInterface,
-            '{{RepositoryContractPath}}' => $repoContractNs,
-        ]);
+        $this->createFile("{$servicePath}/{$this->model}Service.php", $serviceStub, $replacements);
     }
 
     // ──────────────────────────────────────────────────
@@ -395,10 +435,10 @@ class SmartCrudCommand extends Command
     {
         $basePath     = $this->getBasePath();
         $baseNs       = $this->getBaseNamespace();
-        $repoNs       = "{$baseNs}\\Repositories";
+        $repoNs       = "{$baseNs}\\Repositories\\{$this->model}";
         $contractNs   = "{$repoNs}\\Contracts";
-        $contractPath = "{$basePath}/Repositories/Contracts";
-        $repoPath     = "{$basePath}/Repositories";
+        $contractPath = "{$basePath}/Repositories/{$this->model}/Contracts";
+        $repoPath     = "{$basePath}/Repositories/{$this->model}";
         $modelNs      = "{$baseNs}\\Models\\{$this->model}";
 
         // 1. Interface
@@ -425,8 +465,8 @@ class SmartCrudCommand extends Command
     protected function generateData(): void
     {
         $basePath  = $this->getBasePath();
-        $namespace = $this->getBaseNamespace() . '\\DTOs';
-        $path      = "{$basePath}/DTOs/{$this->model}Data.php";
+        $namespace = $this->getBaseNamespace() . "\\DTOs\\{$this->model}";
+        $path      = "{$basePath}/DTOs/{$this->model}/{$this->model}Data.php";
         $table     = Str::snake(Str::pluralStudly($this->model));
 
         // Build typed readonly properties from DB schema
@@ -458,8 +498,8 @@ class SmartCrudCommand extends Command
     protected function generatePolicy(): void
     {
         $basePath  = $this->getBasePath();
-        $namespace = $this->getBaseNamespace() . '\\Policies';
-        $path      = "{$basePath}/Policies/{$this->model}Policy.php";
+        $namespace = $this->getBaseNamespace() . "\\Policies\\{$this->model}";
+        $path      = "{$basePath}/Policies/{$this->model}/{$this->model}Policy.php";
 
         $stub = File::get(__DIR__ . '/../../stubs/policy.stub');
         $this->createFile($path, $stub, [
@@ -479,8 +519,8 @@ class SmartCrudCommand extends Command
         $table = Str::snake(Str::pluralStudly($this->model));
 
         $path = $this->module
-            ? base_path("Modules/{$this->module}/Tests/Feature/{$this->model}Test.php")
-            : base_path("tests/Feature/{$this->model}Test.php");
+            ? base_path("Modules/{$this->module}/Tests/Feature/{$this->model}/{$this->model}Test.php")
+            : base_path("tests/Feature/{$this->model}/{$this->model}Test.php");
 
         $stub = File::get(__DIR__ . '/../../stubs/test.stub');
         $this->createFile($path, $stub, [
@@ -496,8 +536,8 @@ class SmartCrudCommand extends Command
     protected function generateFactory(): void
     {
         $basePath  = $this->getBasePath();
-        $namespace = $this->getBaseNamespace() . '\\Database\\Factories';
-        $path      = "{$basePath}/Database/Factories/{$this->model}Factory.php";
+        $namespace = $this->getBaseNamespace() . "\\Database\\Factories\\{$this->model}";
+        $path      = "{$basePath}/Database/Factories/{$this->model}/{$this->model}Factory.php";
 
         $stub = File::get(__DIR__ . '/../../stubs/factory.stub');
         $this->createFile($path, $stub, [
@@ -633,7 +673,7 @@ class SmartCrudCommand extends Command
         $replacements = array_merge($defaultReplacements, $replacements);
         $content = str_replace(array_keys($replacements), array_values($replacements), $stub);
 
-        if (File::exists($path)) {
+        if (File::exists($path) && ! $this->option('force')) {
             if (! $this->confirm("File already exists: {$path}\nOverwrite?", false)) {
                 $this->warn("  ⤳ Skipped: {$path}");
                 return;

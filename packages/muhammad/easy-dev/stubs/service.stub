@@ -6,12 +6,13 @@ use {{Namespace}}\Contracts\{{ModelClass}}ServiceInterface;
 use {{RepositoryContractPath}}\{{RepositoryInterface}};
 use {{ModelPath}};
 use {{DataPath}};
+{{FileServiceImport}}
 use Illuminate\Database\Eloquent\Collection;
 
 class {{Class}} implements {{ModelClass}}ServiceInterface
 {
     public function __construct(
-        private readonly {{RepositoryInterface}} $repo
+        private readonly {{RepositoryInterface}} $repo{{FileServiceProperty}}
     ) {}
 
     public function getAll(): Collection
@@ -26,12 +27,18 @@ class {{Class}} implements {{ModelClass}}ServiceInterface
 
     public function create({{ModelClass}}Data $data): {{ModelClass}}
     {
-        return $this->repo->create($data->toArray());
+        $payload = $data->toArray();
+        {{FileUploadLogic}}
+
+        return $this->repo->create($payload);
     }
 
     public function update(int $id, {{ModelClass}}Data $data): bool
     {
-        return $this->repo->update($id, $data->toArray());
+        $payload = $data->toArray();
+        {{FileUpdateLogic}}
+
+        return $this->repo->update($id, $payload);
     }
 
     public function delete(int $id): bool

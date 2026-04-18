@@ -8,7 +8,7 @@ use Illuminate\Support\Str;
 
 class SmartFromMigrationCommand extends Command
 {
-    protected $signature = 'smart:from-migration {table}';
+    protected $signature = 'smart:from-migration {table} {--module= : The module name} {--force : Overwrite existing files}';
     protected $description = 'Generate full feature from an existing table';
 
     protected $analyzer;
@@ -46,6 +46,8 @@ class SmartFromMigrationCommand extends Command
             '--with-policy' => true,
             '--with-tests' => true,
             '--soft-delete' => $hasSoftDeletes,
+            '--module' => $this->option('module'),
+            '--force' => $this->option('force'),
         ]);
 
         $this->info("Feature from migration '{$table}' completed!");
