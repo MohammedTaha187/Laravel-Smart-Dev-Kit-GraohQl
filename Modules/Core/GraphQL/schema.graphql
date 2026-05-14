@@ -1,0 +1,278 @@
+
+"--------------------------------------------------------------------------
+| Vendor GraphQL Types
+--------------------------------------------------------------------------"
+type Vendor {
+    id: ID!
+    created_at: DateTime
+    updated_at: DateTime
+}
+
+input CreateVendorInput {
+}
+
+input UpdateVendorInput {
+    id: ID! @rules(apply: ["required"])
+}
+
+extend type Query {
+    vendor(id: ID! @eq): Vendor @find
+    vendors: [Vendor!]! @paginate(defaultCount: 10)
+}
+
+extend type Mutation {
+    createVendor(input: CreateVendorInput! @spread): Vendor @create
+    updateVendor(input: UpdateVendorInput! @spread): Vendor @update
+    deleteVendor(id: ID! @whereKey): Vendor @delete
+}
+
+"--------------------------------------------------------------------------
+| Category GraphQL Types
+--------------------------------------------------------------------------"
+type Category {
+    id: ID!
+    parent_id: String
+    name: String!
+    slug: String!
+    description: String
+    is_active: Boolean!
+    sort_order: Int!
+    deleted_at: DateTime
+    created_at: DateTime
+    updated_at: DateTime
+}
+
+input CreateCategoryInput {
+    parent_id: String
+    name: String!
+    slug: String!
+    description: String
+    is_active: Boolean!
+    sort_order: Int!
+}
+
+input UpdateCategoryInput {
+    id: ID! @rules(apply: ["required"])
+    parent_id: String
+    name: String
+    slug: String
+    description: String
+    is_active: Boolean
+    sort_order: Int
+}
+
+extend type Query {
+    category(id: ID! @eq): Category @find
+    categories: [Category!]! @paginate(defaultCount: 10)
+}
+
+extend type Mutation {
+    createCategory(input: CreateCategoryInput! @spread): Category @create
+    updateCategory(input: UpdateCategoryInput! @spread): Category @update
+    deleteCategory(id: ID! @whereKey): Category @delete
+}
+
+"--------------------------------------------------------------------------
+| Product GraphQL Types
+--------------------------------------------------------------------------"
+type Product {
+    id: ID!
+    vendor_id: String!
+    category_id: String!
+    name: String!
+    slug: String!
+    description: String
+    price: Float!
+    sale_price: Float
+    sku: String
+    stock: Int!
+    status: String!
+    is_featured: Boolean!
+    deleted_at: DateTime
+    created_at: DateTime
+    updated_at: DateTime
+}
+
+input CreateProductInput {
+    vendor_id: String!
+    category_id: String!
+    name: String!
+    slug: String!
+    description: String
+    price: Float!
+    sale_price: Float
+    sku: String
+    stock: Int!
+    status: String!
+    is_featured: Boolean!
+}
+
+input UpdateProductInput {
+    id: ID! @rules(apply: ["required"])
+    vendor_id: String
+    category_id: String
+    name: String
+    slug: String
+    description: String
+    price: Float
+    sale_price: Float
+    sku: String
+    stock: Int
+    status: String
+    is_featured: Boolean
+}
+
+extend type Query {
+    product(id: ID! @eq): Product @find
+    products: [Product!]! @paginate(defaultCount: 10)
+}
+
+extend type Mutation {
+    createProduct(input: CreateProductInput! @spread): Product @create
+    updateProduct(input: UpdateProductInput! @spread): Product @update
+    deleteProduct(id: ID! @whereKey): Product @delete
+}
+
+"--------------------------------------------------------------------------
+| Order GraphQL Types
+--------------------------------------------------------------------------"
+type Order {
+    id: ID!
+    user_id: String!
+    address_id: String!
+    status: String!
+    payment_status: String!
+    payment_method: String
+    subtotal: Float!
+    discount: Float!
+    shipping_cost: Float!
+    tax: Float!
+    total: Float!
+    notes: String
+    created_at: DateTime
+    updated_at: DateTime
+}
+
+input CreateOrderInput {
+    user_id: String!
+    address_id: String!
+    status: String!
+    payment_status: String!
+    payment_method: String
+    subtotal: Float!
+    discount: Float!
+    shipping_cost: Float!
+    tax: Float!
+    total: Float!
+    notes: String
+}
+
+input UpdateOrderInput {
+    id: ID! @rules(apply: ["required"])
+    user_id: String
+    address_id: String
+    status: String
+    payment_status: String
+    payment_method: String
+    subtotal: Float
+    discount: Float
+    shipping_cost: Float
+    tax: Float
+    total: Float
+    notes: String
+}
+
+extend type Query {
+    order(id: ID! @eq): Order @find
+    orders: [Order!]! @paginate(defaultCount: 10)
+}
+
+extend type Mutation {
+    createOrder(input: CreateOrderInput! @spread): Order @create
+    updateOrder(input: UpdateOrderInput! @spread): Order @update
+    deleteOrder(id: ID! @whereKey): Order @delete
+}
+
+"--------------------------------------------------------------------------
+| Tag GraphQL Types
+--------------------------------------------------------------------------"
+type Tag {
+    id: ID!
+    name: String!
+    slug: String!
+    created_at: DateTime
+    updated_at: DateTime
+}
+
+input CreateTagInput {
+    name: String!
+    slug: String!
+}
+
+input UpdateTagInput {
+    id: ID! @rules(apply: ["required"])
+    name: String
+    slug: String
+}
+
+extend type Query {
+    tag(id: ID! @eq): Tag @find
+    tags: [Tag!]! @paginate(defaultCount: 10)
+}
+
+extend type Mutation {
+    createTag(input: CreateTagInput! @spread): Tag @create
+    updateTag(input: UpdateTagInput! @spread): Tag @update
+    deleteTag(id: ID! @whereKey): Tag @delete
+}
+
+"--------------------------------------------------------------------------
+| Address GraphQL Types
+--------------------------------------------------------------------------"
+type Address {
+    id: ID!
+    user_id: String!
+    address_line_1: String!
+    address_line_2: String
+    city: String!
+    state: String
+    postal_code: String
+    country: String!
+    is_default: Boolean!
+    created_at: DateTime
+    updated_at: DateTime
+}
+
+input CreateAddressInput {
+    user_id: String!
+    address_line_1: String!
+    address_line_2: String
+    city: String!
+    state: String
+    postal_code: String
+    country: String!
+    is_default: Boolean!
+}
+
+input UpdateAddressInput {
+    id: ID! @rules(apply: ["required"])
+    user_id: String
+    address_line_1: String
+    address_line_2: String
+    city: String
+    state: String
+    postal_code: String
+    country: String
+    is_default: Boolean
+}
+
+extend type Query {
+    address(id: ID! @eq): Address @find
+    addresses: [Address!]! @paginate(defaultCount: 10)
+}
+
+extend type Mutation {
+    createAddress(input: CreateAddressInput! @spread): Address @create
+    updateAddress(input: UpdateAddressInput! @spread): Address @update
+    deleteAddress(id: ID! @whereKey): Address @delete
+}
