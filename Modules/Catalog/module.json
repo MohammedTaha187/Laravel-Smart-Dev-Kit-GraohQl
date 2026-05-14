@@ -1,0 +1,13 @@
+{
+    "name": "Catalog",
+    "alias": "catalog",
+    "description": "Catalog module",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Catalog\\CatalogServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": []
+}

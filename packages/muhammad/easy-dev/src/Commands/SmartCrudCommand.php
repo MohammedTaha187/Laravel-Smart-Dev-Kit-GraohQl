@@ -10,15 +10,13 @@ use EasyDev\Laravel\Services\DBAnalyzer;
 class SmartCrudCommand extends Command
 {
     protected $signature = 'smart:crud {name}
-                            {--api : Create an API controller}
                             {--with-service : Create a service class}
                             {--with-repository : Create a repository class}
-                            {--with-resource : Create an API resource}
                             {--with-data : Create a Spatie Data object (Type-Safe)}
                             {--with-contracts : Generate interfaces/contracts for services and repositories}
                             {--module= : Generate code inside a specific module}
                             {--with-policy : Create a policy}
-                            {--with-tests : Create Pest tests}
+                            {--with-tests : Create tests}
                             {--with-media : Add media support using Spatie Media Library}
                             {--with-event : Generate model events}
                             {--with-notification : Generate a default notification class}
@@ -57,27 +55,17 @@ class SmartCrudCommand extends Command
         $this->generateModel();
         $this->generateMigration();
 
-        // Layer 2 — HTTP
-        $this->generateStoreRequest();
-        $this->generateUpdateRequest();
-        $this->generateResource();
-        $this->generateCollection();
-
-        // Layer 3 — Service
+        // Layer 2 — Service
         $this->generateService();
 
-        // Layer 4 — Repository
+        // Layer 3 — Repository
         $this->generateRepository();
 
-        // Layer 5 — DTO + Policy + Test
+        // Layer 4 — DTO + Policy + Test
         $this->generateData();
         $this->generatePolicy();
         $this->generateFactory();
         $this->generateTest();
-
-        // Controllers (wires everything together)
-        $this->generateController('Admin');
-        $this->generateController('Client');
 
         // Optional extras
         if ($this->option('with-notification')) {
@@ -87,8 +75,8 @@ class SmartCrudCommand extends Command
             $this->generateEvent();
         }
 
-        // Route registration
-        $this->registerRoute();
+        // GraphQL Schema registration
+        $this->registerGraphQLSchema();
 
         $this->newLine();
         $this->info("✅ CRUD for [{$this->model}] generated successfully!");
@@ -262,147 +250,7 @@ class SmartCrudCommand extends Command
     }
 
     // ──────────────────────────────────────────────────
-    // Layer 2 — HTTP (Controller + Requests + Resource + Collection)
-    // ──────────────────────────────────────────────────
-
-    protected function generateStoreRequest(): void
-    {
-        $basePath  = $this->getBasePath();
-        $subPath   = $this->getApiSubPath();
-        $subNs     = $this->getApiSubNamespace();
-        $namespace = $this->getBaseNamespace() . "\\Http\\Requests\\{$subNs}";
-        $path      = "{$basePath}/Http/Requests/{$subPath}/Store{$this->model}Request.php";
-        $table     = Str::snake(Str::pluralStudly($this->model));
-
-        $rules = $this->resolveRules($table);
-
-        $stub = File::get(__DIR__ . '/../../stubs/request.store.stub');
-        $this->createFile($path, $stub, [
-            '{{Namespace}}'     => $namespace,
-            '{{ModelClass}}'    => $this->model,
-            '{{ModelPath}}'     => $this->getBaseNamespace() . "\\Models\\{$this->model}",
-            '{{modelVariable}}' => Str::camel($this->model),
-            '{{Rules}}'         => $rules,
-        ]);
-    }
-
-    protected function generateUpdateRequest(): void
-    {
-        $basePath  = $this->getBasePath();
-        $subPath   = $this->getApiSubPath();
-        $subNs     = $this->getApiSubNamespace();
-        $namespace = $this->getBaseNamespace() . "\\Http\\Requests\\{$subNs}";
-        $path      = "{$basePath}/Http/Requests/{$subPath}/Update{$this->model}Request.php";
-        $table     = Str::snake(Str::pluralStudly($this->model));
-
-        // Wrap rules with sometimes() for PATCH support
-        $rules = $this->resolveRules($table, sometimes: true);
-
-        $stub = File::get(__DIR__ . '/../../stubs/request.update.stub');
-        $this->createFile($path, $stub, [
-            '{{Namespace}}'     => $namespace,
-            '{{ModelClass}}'    => $this->model,
-            '{{ModelPath}}'     => $this->getBaseNamespace() . "\\Models\\{$this->model}",
-            '{{modelVariable}}' => Str::camel($this->model),
-            '{{Rules}}'         => $rules,
-        ]);
-    }
-
-    protected function generateResource(): void
-    {
-        $basePath  = $this->getBasePath();
-        $subPath   = $this->getApiSubPath();
-        $subNs     = $this->getApiSubNamespace();
-        $namespace = $this->getBaseNamespace() . "\\Http\\Resources\\{$subNs}";
-        $path      = "{$basePath}/Http/Resources/{$subPath}/{$this->model}Resource.php";
-
-        $table = Str::snake(Str::pluralStudly($this->model));
-        $columns = $this->analyzer->getColumns($table);
-
-        $fields = '';
-        $hasFiles = false;
-
-        foreach ($columns as $column) {
-            $name = $column['name'];
-            if (in_array($name, ['created_at', 'updated_at', 'deleted_at'])) continue;
-
-            if ($this->analyzer->isFileColumn($name)) {
-                $hasFiles = true;
-                $fields .= "\n            '{$name}' => app(\\EasyDev\\Laravel\\Services\\FileService::class)->url(\$this->{$name}),";
-            } else {
-                $fields .= "\n            '{$name}' => \$this->{$name},";
-            }
-        }
-
-        $stub = File::get(__DIR__ . '/../../stubs/resource.stub');
-        $this->createFile($path, $stub, [
-            '{{Namespace}}'      => $namespace,
-            '{{Class}}'          => "{$this->model}Resource",
-            '{{ResourceFields}}' => $fields,
-        ]);
-    }
-
-    protected function generateCollection(): void
-    {
-        $basePath  = $this->getBasePath();
-        $subPath   = $this->getApiSubPath();
-        $subNs     = $this->getApiSubNamespace();
-        $namespace = $this->getBaseNamespace() . "\\Http\\Resources\\{$subNs}";
-        $path      = "{$basePath}/Http/Resources/{$subPath}/{$this->model}Collection.php";
-
-        $stub = File::get(__DIR__ . '/../../stubs/collection.stub');
-        $this->createFile($path, $stub, [
-            '{{Namespace}}' => $namespace,
-            '{{Class}}'     => "{$this->model}Collection",
-            '{{Resource}}'  => "{$this->model}Resource",
-        ]);
-    }
-
-    protected function generateController(string $type = 'Admin'): void
-    {
-        $basePath     = $this->getBasePath();
-        $baseNs       = $this->getBaseNamespace();
-        $subNs        = "{$baseNs}\\Http\\Controllers\\" . $this->getApiSubNamespace($type);
-        $subPath      = "Api/V1/{$type}";
-        $path         = "{$basePath}/Http/Controllers/{$subPath}/{$this->model}Controller.php";
-        
-        $stubFile     = $type === 'Client' ? 'controller.client.stub' : 'controller.api.stub';
-        $stub         = File::get(__DIR__ . "/../../stubs/{$stubFile}");
-
-        $requestPath  = $this->getApiSubNamespace(); // Api\V1\{Model}
-        $storeRequestNs    = "{$baseNs}\\Http\\Requests\\{$requestPath}";
-        $resourceNs        = "{$baseNs}\\Http\\Resources\\{$requestPath}";
-        $serviceContractNs = "{$baseNs}\\Services\\{$this->model}\\Contracts";
-        $dataNs            = "{$baseNs}\\DTOs\\{$this->model}";
-
-        $replacements = [
-            '{{Namespace}}'          => $subNs,
-            '{{ModelClass}}'         => $this->model,
-            '{{ModelPath}}'          => "{$baseNs}\\Models\\{$this->model}",
-            '{{ModelVariable}}'      => Str::camel($this->model),
-            '{{ServiceContractPath}}' => $serviceContractNs,
-            '{{ResourceImport}}'     => "use {$resourceNs}\\{$this->model}Resource;",
-            '{{CollectionImport}}'   => "use {$resourceNs}\\{$this->model}Collection;",
-            '{{ResourceClass}}'      => "{$this->model}Resource",
-            '{{CollectionClass}}'    => "{$this->model}Collection",
-            '{{Class}}'              => "{$this->model}Controller",
-        ];
-
-        if ($type !== 'Client') {
-            $replacements = array_merge($replacements, [
-                '{{StoreRequestImport}}' => "use {$storeRequestNs}\\Store{$this->model}Request;",
-                '{{UpdateRequestImport}}' => "use {$storeRequestNs}\\Update{$this->model}Request;",
-                '{{StoreRequestClass}}'  => "Store{$this->model}Request",
-                '{{UpdateRequestClass}}' => "Update{$this->model}Request",
-                '{{DataImport}}'         => "use {$dataNs}\\{$this->model}Data;",
-            ]);
-        }
-
-        $this->createFile($path, $stub, $replacements);
-    }
-
-    // ──────────────────────────────────────────────────
-    // Layer 3 — Service (Interface + Implementation)
+    // Layer 2 — Service (Interface + Implementation)
     // ──────────────────────────────────────────────────
 
     protected function generateService(): void
@@ -606,49 +454,115 @@ class SmartCrudCommand extends Command
     }
 
     // ──────────────────────────────────────────────────
-    // Route registration
+    // GraphQL Schema registration
     // ──────────────────────────────────────────────────
 
-    protected function registerRoute(): void
+    protected function registerGraphQLSchema(): void
     {
-        $routeFile = $this->module
-            ? base_path("Modules/{$this->module}/Routes/api.php")
-            : base_path('routes/api.php');
-
-        if (! File::exists($routeFile)) {
+        $mainSchemaFile = base_path('graphql/schema.graphql');
+        
+        if (! File::exists($mainSchemaFile)) {
+            $this->warn("  ⚠ graphql/schema.graphql not found, skipping GraphQL registration.");
             return;
         }
 
-        $content = File::get($routeFile);
+        $table = Str::snake(Str::pluralStudly($this->model));
+        $columns = $this->analyzer->getColumns($table);
 
-        $baseNs = $this->getBaseNamespace();
-        $adminNs = "{$baseNs}\\Http\\Controllers\\" . $this->getApiSubNamespace('Admin');
-        $clientNs = "{$baseNs}\\Http\\Controllers\\" . $this->getApiSubNamespace('Client');
+        if (empty($columns)) {
+            $this->warn("  ⚠ Could not find columns for table [{$table}], skipping GraphQL schema generation.");
+            return;
+        }
+
+        $typeName = $this->model;
+        $pluralName = Str::camel(Str::plural($this->model));
+        $singularName = Str::camel($this->model);
+
+        $typeFields = "";
+        $inputFields = "";
+        $updateFields = "    id: ID! @rules(apply: [\"required\"])\n";
+
+        foreach ($columns as $column) {
+            $name = $column['name'];
+            $type = $this->mapToGraphQLType($column);
+            $required = $column['nullable'] === false ? '!' : '';
+
+            // Type Fields
+            $typeFields .= "    {$name}: {$type}{$required}\n";
+
+            // Input Fields
+            if (! in_array($name, ['id', 'created_at', 'updated_at', 'deleted_at'])) {
+                $inputFields .= "    {$name}: {$type}{$required}\n";
+                $updateFields .= "    {$name}: {$type}\n";
+            }
+        }
+
+        $schemaSnippet = "\n\"--------------------------------------------------------------------------\n| {$typeName} GraphQL Types\n--------------------------------------------------------------------------\"\n";
+        $schemaSnippet .= "type {$typeName} {\n{$typeFields}}\n\n";
+        $schemaSnippet .= "input Create{$typeName}Input {\n{$inputFields}}\n\n";
+        $schemaSnippet .= "input Update{$typeName}Input {\n{$updateFields}}\n\n";
+
+        $schemaSnippet .= "extend type Query {\n";
+        $schemaSnippet .= "    {$singularName}(id: ID! @eq): {$typeName} @find\n";
+        $schemaSnippet .= "    {$pluralName}: [{$typeName}!]! @paginate(defaultCount: 10)\n";
+        $schemaSnippet .= "}\n\n";
+
+        $schemaSnippet .= "extend type Mutation {\n";
+        $schemaSnippet .= "    create{$typeName}(input: Create{$typeName}Input! @spread): {$typeName} @create\n";
+        $schemaSnippet .= "    update{$typeName}(input: Update{$typeName}Input! @spread): {$typeName} @update\n";
+        $schemaSnippet .= "    delete{$typeName}(id: ID! @whereKey): {$typeName} @delete\n";
+        $schemaSnippet .= "}\n";
+
+        // Determine target file
+        $targetFile = $mainSchemaFile;
+        if ($this->module) {
+            $moduleDir = base_path("Modules/{$this->module}/GraphQL");
+            if (! File::exists($moduleDir)) {
+                File::makeDirectory($moduleDir, 0755, true);
+            }
+            $targetFile = "{$moduleDir}/schema.graphql";
+            
+            // Register import in main schema if not exists
+            $importStatement = "#import ../Modules/{$this->module}/GraphQL/*.graphql\n";
+            $mainContent = File::get($mainSchemaFile);
+            if (! Str::contains($mainContent, $importStatement)) {
+                File::prepend($mainSchemaFile, $importStatement);
+            }
+        }
+
+        // Write to target file
+        if (File::exists($targetFile)) {
+            $content = File::get($targetFile);
+            if (Str::contains($content, "type {$typeName} {")) {
+                $this->warn("  ⤳ GraphQL type [{$typeName}] already exists in {$targetFile}, skipping.");
+                return;
+            }
+            File::append($targetFile, $schemaSnippet);
+        } else {
+            File::put($targetFile, $schemaSnippet);
+        }
+
+        $this->info("  ✓ GraphQL Schema registered in: {$targetFile}");
+    }
+
+    protected function mapToGraphQLType(array $column): string
+    {
+        $name = $column['name'];
+        $dbType = strtolower($column['type_name'] ?? '');
+        $fullType = strtolower($column['type'] ?? '');
+
+        if ($name === 'id') return 'ID';
         
-        $adminClass  = "Admin{$this->model}Controller";
-        $clientClass = "Client{$this->model}Controller";
-        $routeName   = Str::kebab(Str::plural($this->model));
-
-        // 1. Add Imports
-        $imports = "use {$adminNs}\\{$this->model}Controller as {$adminClass};\nuse {$clientNs}\\{$this->model}Controller as {$clientClass};\n// [GEN-IMPORTS]";
-        if (! Str::contains($content, "as {$adminClass}")) {
-            $content = str_replace('// [GEN-IMPORTS]', $imports, $content);
+        // Handle Boolean for tinyint(1)
+        if (Str::contains($fullType, 'tinyint(1)') || Str::contains($dbType, 'bool')) {
+            return 'Boolean';
         }
 
-        // 2. Add Client Route
-        $clientRoute = "Route::apiResource('{$routeName}', {$clientClass}::class)->only(['index', 'show']);\n        // [GEN-CLIENT-ROUTES]";
-        if (! Str::contains($content, "'{$routeName}', {$clientClass}::class")) {
-            $content = str_replace('// [GEN-CLIENT-ROUTES]', $clientRoute, $content);
-        }
+        if (Str::contains($dbType, ['int', 'integer'])) return 'Int';
+        if (Str::contains($dbType, ['decimal', 'float', 'double'])) return 'Float';
+        if (Str::contains($dbType, ['date', 'timestamp', 'datetime'])) return 'DateTime';
 
-        // 3. Add Admin Route
-        $adminRoute = "Route::apiResource('{$routeName}', {$adminClass}::class);\n        // [GEN-ADMIN-ROUTES]";
-        if (! Str::contains($content, "'{$routeName}', {$adminClass}::class")) {
-            $content = str_replace('// [GEN-ADMIN-ROUTES]', $adminRoute, $content);
-        }
-
-        File::put($routeFile, $content);
-        $this->info("  ✓ Routes registered in: {$routeFile}");
+        return 'String';
     }
 
     // ──────────────────────────────────────────────────

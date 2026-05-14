@@ -1,96 +1,93 @@
-# 🚀 Easy Dev SDK for Laravel
+# 🚀 Laravel GraphQL Smart Dev Kit
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/muhammad/easy-dev.svg?style=for-the-badge)](https://packagist.org/packages/muhammad/easy-dev)
-[![Total Downloads](https://img.shields.io/packagist/dt/muhammad/easy-dev.svg?style=for-the-badge)](https://packagist.org/packages/muhammad/easy-dev)
-[![License](https://img.shields.io/packagist/l/muhammad/easy-dev.svg?style=for-the-badge)](https://packagist.org/packages/muhammad/easy-dev)
 [![PHP Version](https://img.shields.io/badge/PHP-8.3%2B-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://php.net)
-[![Laravel Version](https://img.shields.io/badge/Laravel-11%2F12%2F13-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)](https://laravel.com)
+[![Laravel Version](https://img.shields.io/badge/Laravel-11%2F12-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)](https://laravel.com)
+[![GraphQL](https://img.shields.io/badge/GraphQL-Lighthouse-E10098?style=for-the-badge&logo=graphql&logoColor=white)](https://lighthouse-php.com)
 
-**Easy Dev SDK** is a powerful, automation-focused toolkit designed to accelerate Laravel API development by 10x. It eliminates boilerplate by generating high-quality, production-ready code structures following strict Clean Architecture principles.
+**Laravel GraphQL Smart Dev Kit** is a professional, automation-focused toolkit designed to build high-performance GraphQL APIs. It eliminates boilerplate by generating Clean Architecture structures and GraphQL Schemas automatically.
 
 ---
 
 ## 🏗️ Architecture Flow
 
-The SDK enforces a professional multi-layered architecture for every feature:
+The SDK enforces a professional multi-layered architecture, perfectly integrated with **Nuwave Lighthouse**:
 
 ```mermaid
 graph TD
-    A[Request] --> B[Controller]
-    B --> C[DTO - Spatie Data]
-    C --> D[Service Interface]
-    D --> E[Service Implementation]
-    E --> F[Repository Interface]
-    F --> G[Repository Implementation]
-    G --> H[Model]
-    H --> I[API Resource]
+    A[GraphQL Client] --> B[Lighthouse Schema]
+    B --> C[Service Interface]
+    C --> D[Service Implementation]
+    D --> E[Repository Interface]
+    E --> F[Repository Implementation]
+    F --> G[Model]
 ```
 
 ---
 
 ## 🚀 Key Features
 
-- **Standardized CRUD Generation**: Generate Model, Migration, Controller, DTO, Service, Repository, Policy, and Pest tests in one command.
-- **Modern Model Standards**: Uses Laravel 13 `#[Guarded]` attributes and PHPDoc-based factory discovery.
-- **Smart UUID Support**: Automatically detects UUID primary keys and configures `HasUuids` traits and string type-hinting.
-- **Smart Validation**: Automatically detects database column types and generates validation rules.
-- **Automated Relationship Discovery**: Scans DB constraints to write `belongsTo` and `hasMany` methods automatically.
-- **Modular Support**: Full integration with `nwidart/laravel-modules`.
-
----
-
-## ✨ Recent Updates (v2.0)
-
-- **Laravel 13 & PHP 8.4 Ready**: Full support for the latest framework features.
-- **Mass Assignment Refactor**: Replaced `$fillable` with `#[Guarded(['id', ...])]` attribute.
-- **Factory Discovery**: Removed `newFactory()` boilerplate; uses modern `@use HasFactory<ModelFactory>` pattern.
-- **Global ID Type-Hinting**: Automatic switching between `int` and `string` for Service/Repository methods based on PK.
+- **Automated GraphQL Schema Generation**: Automatically generates `Types`, `Inputs`, `Queries`, and `Mutations` based on your database schema.
+- **Clean Architecture CRUD**: Generate Model, Migration, DTO, Service, Repository, and Policy in one command.
+- **Modular GraphQL Support**: Automatically creates and imports modular schema files (`Modules/{Module}/GraphQL/schema.graphql`).
+- **Direct Lighthouse Integration**: Uses standard directives like `@find`, `@paginate`, `@create`, `@update`, and `@delete`.
+- **Smart Type Mapping**: Automatically maps DB column types to GraphQL scalars (`String`, `Int`, `Float`, `Boolean`, `DateTime`).
+- **Smart UUID Support**: Native support for UUID primary keys.
 
 ---
 
 ## 🛠️ Installation
 
 ```bash
-composer require muhammad/easy-dev --dev
-```
+# Clone the repository
+git clone https://github.com/MohammedTaha187/Laravel-Smart-Dev-Kit-GraohQl.git
 
-Publish the configuration and stubs:
+# Install dependencies
+composer install
 
-```bash
-php artisan vendor:publish --tag="easy-dev-config"
-php artisan vendor:publish --tag="easy-dev-stubs"
+# Set up environment
+cp .env.example .env
+php artisan key:generate
+php artisan jwt:secret
+
+# Run migrations
+php artisan migrate
 ```
 
 ---
 
 ## 📖 Usage
 
-### 1. Generate a Professional CRUD
-Generate a complete feature set for a "Product" model (and create a migration):
+### 1. Generate a Professional GraphQL CRUD
+Generate a complete feature set for a "Product" model:
 
 ```bash
-php artisan smart:crud Product --module=Ecommerce
+php artisan smart:crud Product --module=Catalog
 ```
 
-### 2. Generate from Existing Migration
-Build an entire feature based on an existing database table (Auto-detects columns and relationships):
+### 2. Testing via Postman
+- **URL:** `http://localhost/graphql`
+- **Method:** `POST`
+- **Body:** `GraphQL`
 
-```bash
-php artisan smart:from-migration products
-```
-
-### 3. Sync Relationships
-Automatically detect database relationships for ALL existing models:
-
-```bash
-php artisan smart:sync-relations
+Example Query:
+```graphql
+query {
+  products {
+    data {
+      id
+      name
+      price
+    }
+  }
+}
 ```
 
 ---
 
 ## 🧪 Testing
 
-The SDK is built with **Pest** in mind. Every generated feature comes with a comprehensive Pest test suite ready to run:
+Every generated feature is ready for testing. Run:
 
 ```bash
 php artisan test
@@ -104,4 +101,4 @@ php artisan test
 *Backend Developer & Cloud Architect*
 
 ---
-*Built with ❤️ for the Laravel Community.*
+*Built with ❤️ for the Laravel & GraphQL Community.*

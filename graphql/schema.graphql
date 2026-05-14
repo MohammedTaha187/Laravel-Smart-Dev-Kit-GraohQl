@@ -1,0 +1,69 @@
+"A datetime string with format `Y-m-d H:i:s`, e.g. `2018-05-23 13:43:32`."
+scalar DateTime @scalar(class: "Nuwave\\Lighthouse\\Schema\\Types\\Scalars\\DateTime")
+
+type Query {
+    "Get the currently authenticated user."
+    me: User @auth @guard(with: ["api"])
+
+    "Find a single user by an identifying attribute."
+    user(
+        id: ID @eq @rules(apply: ["prohibits:email", "required_without:email"])
+        email: String @eq @rules(apply: ["prohibits:id", "required_without:id", "email"])
+    ): User @find
+
+    "List multiple users."
+    users(
+        name: String @where(operator: "like")
+    ): [User!]! @paginate(defaultCount: 10)
+}
+
+type Mutation {
+    "Register a new user."
+    register(
+        name: String! @rules(apply: ["required", "string", "max:255"])
+        email: String! @rules(apply: ["required", "email", "unique:users,email"])
+        password: String! @rules(apply: ["required", "min:8", "confirmed"])
+        password_confirmation: String!
+    ): AuthPayload! @field(resolver: "App\\GraphQL\\Mutations\\AuthMutation@register")
+
+    "Login an existing user."
+    login(
+        email: String! @rules(apply: ["required", "email"])
+        password: String! @rules(apply: ["required"])
+    ): AuthPayload! @field(resolver: "App\\GraphQL\\Mutations\\AuthMutation@login")
+
+    "Logout the current user."
+    logout: MessageResponse! @field(resolver: "App\\GraphQL\\Mutations\\AuthMutation@logout") @guard(with: ["api"])
+
+    "Refresh the authentication token."
+    refresh: AuthPayload! @field(resolver: "App\\GraphQL\\Mutations\\AuthMutation@refresh") @guard(with: ["api"])
+
+    "Update the user's profile."
+    updateProfile(
+        name: String @rules(apply: ["string", "max:255"])
+        email: String @rules(apply: ["email", "unique:users,email"])
+    ): User! @field(resolver: "App\\GraphQL\\Mutations\\AuthMutation@updateProfile") @guard(with: ["api"])
+}
+
+"Account of a person who uses this application."
+type User {
+    id: ID!
+    name: String!
+    email: String!
+    email_verified_at: DateTime
+    created_at: DateTime!
+    updated_at: DateTime!
+}
+
+"Response for authentication actions."
+type AuthPayload {
+    user: User!
+    token: String!
+    token_type: String!
+    expires_in: Int!
+}
+
+"Simple message response."
+type MessageResponse {
+    message: String!
+}
